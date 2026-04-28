@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Deutsch Vokabeltrainer</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9f9f7;color:#1a1a1a;min-height:100vh}
+  button{font-family:inherit;outline:none}
+  textarea,input{font-family:inherit;outline:none}
+  :root{
+    --bg-primary:#ffffff;
+    --bg-secondary:#f4f3ef;
+    --text-primary:#1a1a1a;
+    --text-secondary:#555550;
+    --text-tertiary:#999990;
+    --border:#e0dfd8;
+    --border-md:#ccccc4;
+    --radius-md:8px;
+    --radius-lg:12px;
+  }
+  @media(prefers-color-scheme:dark){
+    :root{
+      --bg-primary:#1e1e1c;
+      --bg-secondary:#2a2a27;
+      --text-primary:#f0f0ec;
+      --text-secondary:#aaa9a0;
+      --text-tertiary:#666660;
+      --border:#3a3a36;
+      --border-md:#4a4a46;
+    }
+    body{background:#161614;color:#f0f0ec}
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useCallback,useRef} = React;
+const STORAGE_KEY = "deutsch-vokabeln-v3";
+
+const VOCAB_DATA = [
+  {id:"e1",type:"Substantiv",deutsch:"Stofftier",artikel:"das",plural:"die Stofftiere",español:"peluche, animal de tela"},
+  {id:"e2",type:"Substantiv",deutsch:"Synchronisation",artikel:"die",plural:"—",español:"doblaje, sincronización"},
+  {id:"e3",type:"Verb",deutsch:"synchronisieren",prasens:"synchronisiere",prateritum:"synchronisierte",perfekt:"hat synchronisiert",español:"doblar, sincronizar"},
+  {id:"e4",type:"Substantiv",deutsch:"Redewendung",artikel:"die",plural:"die Redewendungen",español:"modismo, expresión idiomática"},
+  {id:"e5",type:"Substantiv",deutsch:"Wendung",artikel:"die",plural:"die Wendungen",español:"giro, expresión"},
+  {id:"e6",type:"Substantiv",deutsch:"Sprichwort",artikel:"das",plural:"die Sprichwörter",español:"proverbio, refrán"},
+  {id:"e7",type:"Ausdruck",deutsch:"Daumen hoch",kontext:"aprobación informal",español:"pulgar arriba"},
+  {id:"e8",type:"Ausdruck",deutsch:"jemanden um den Finger wickeln",kontext:"manipular a alguien con encanto",español:"tener a alguien en el bolsillo"},
+  {id:"e9",type:"Ausdruck",deutsch:"einen grünen Daumen haben",kontext:"solo para plantas",español:"tener buena mano para las plantas"},
+  {id:"e10",type:"Ausdruck",deutsch:"etwas in die Finger bekommen",kontext:"conseguir algo que querías",español:"hacerse con algo"},
+  {id:"e11",type:"Substantiv",deutsch:"Augenring",artikel:"der",plural:"die Augenringe",español:"ojera"},
+  {id:"e12",type:"Substantiv",deutsch:"Tränensack",artikel:"der",plural:"die Tränensäcke",español:"bolsa bajo el ojo"},
+  {id:"e13",type:"Verb",deutsch:"schummeln",prasens:"schummle",prateritum:"schummelte",perfekt:"hat geschummelt",español:"hacer trampa"},
+  {id:"e14",type:"Verb",deutsch:"erklären",prasens:"erkläre",prateritum:"erklärte",perfekt:"hat erklärt",español:"explicar"},
+  {id:"e15",type:"Adverb",deutsch:"eigentlich",español:"en realidad, de hecho"},
+  {id:"e16",type:"Ausdruck",deutsch:"die Welt liegt jemandem zu Füßen",kontext:"alguien tiene todo a su disposición",español:"el mundo está a los pies de alguien"},
+  {id:"e17",type:"Ausdruck",deutsch:"Du hast Recht",kontext:"confirmar que alguien tiene razón",español:"tienes razón"},
+  {id:"e18",type:"Adjektiv",deutsch:"stumm",español:"mudo, silencioso"},
+  {id:"e19",type:"Verb",deutsch:"erinnern",prasens:"erinnere mich",prateritum:"erinnerte mich",perfekt:"hat sich erinnert",español:"recordar, acordarse"},
+  {id:"e20",type:"Verb",deutsch:"romantisieren",prasens:"romantisiere",prateritum:"romantisierte",perfekt:"hat romantisiert",español:"romantizar, idealizar"},
+  {id:"e21",type:"Substantiv",deutsch:"Geldverschwendung",artikel:"die",plural:"—",español:"derroche de dinero"},
+  {id:"e22",type:"Substantiv",deutsch:"Gewicht",artikel:"das",plural:"die Gewichte",español:"peso"},
+  {id:"e23",type:"Verb",deutsch:"wiegen",prasens:"wiege",prateritum:"wog",perfekt:"hat gewogen",español:"pesar"},
+  {id:"e24",type:"Ausdruck",deutsch:"aus diesem Grund",kontext:"conector causal formal",español:"por esta razón"},
+  {id:"e25",type:"Ausdruck",deutsch:"Mach kein Quatsch!",kontext:"informal, no seas tonto",español:"¡no digas tonterías!"},
+  {id:"e26",type:"Adjektiv",deutsch:"schlabbrig",español:"holgado, ancho (ropa)"},
+  {id:"e27",type:"Verb",deutsch:"pflücken",prasens:"pflücke",prateritum:"pflückte",perfekt:"hat gepflückt",español:"recoger, cosechar"},
+  {id:"e28",type:"Substantiv",deutsch:"Bundesland",artikel:"das",plural:"die Bundesländer",español:"estado federado"},
+  {id:"e29",type:"Substantiv",deutsch:"Strafe",artikel:"die",plural:"die Strafen",español:"castigo, multa"},
+  {id:"e30",type:"Verb",deutsch:"bestrafen",prasens:"bestrafe",prateritum:"bestrafte",perfekt:"hat bestraft",español:"castigar"},
+  {id:"e31",type:"Substantiv",deutsch:"Beziehung",artikel:"die",plural:"die Beziehungen",español:"relación"},
+  {id:"e32",type:"Substantiv",deutsch:"Landeskunde",artikel:"die",plural:"—",español:"cultura y civilización del país"},
+  {id:"e33",type:"Adjektiv",deutsch:"regelmäßig",español:"regular, con regularidad"},
+  {id:"e34",type:"Adjektiv",deutsch:"unregelmäßig",español:"irregular"},
+  {id:"e35",type:"Verb",deutsch:"aufwachsen",prasens:"wachse auf",prateritum:"wuchs auf",perfekt:"ist aufgewachsen",español:"crecer, criarse"},
+  {id:"e36",type:"Verb",deutsch:"kapieren",prasens:"kapiere",prateritum:"kapierte",perfekt:"hat kapiert",español:"entender, pillar (coloquial)"},
+  {id:"e37",type:"Verb",deutsch:"schnallen",prasens:"schnalle",prateritum:"schnallte",perfekt:"hat geschnallt",español:"entender, captar (slang)"},
+  {id:"e38",type:"Verb",deutsch:"raffen",prasens:"raffe",prateritum:"raffte",perfekt:"hat gerafft",español:"pillar, entender (slang)"},
+  {id:"e39",type:"Verb",deutsch:"durchschauen",prasens:"schaue durch",prateritum:"schaute durch",perfekt:"hat durchgeschaut",español:"calar, ver a través de"},
+  {id:"e40",type:"Substantiv",deutsch:"Überstunde",artikel:"die",plural:"die Überstunden",español:"hora extra"},
+  {id:"e41",type:"Ausdruck",deutsch:"Bescheid geben / sagen",kontext:"informar a alguien",español:"avisar, hacer saber"},
+  {id:"e42",type:"Adjektiv",deutsch:"verbreitet",español:"extendido, común"},
+  {id:"e43",type:"Ausdruck",deutsch:"Du musst dich nicht rechtfertigen",kontext:"no tienes que dar explicaciones",español:"no tienes que justificarte"},
+  {id:"e44",type:"Verb",deutsch:"wachsen",prasens:"wachse",prateritum:"wuchs",perfekt:"ist gewachsen",español:"crecer"},
+  {id:"e45",type:"Konjunktion",deutsch:"und gleichzeitig",funktion:"algo que ocurre al mismo tiempo",español:"y al mismo tiempo"},
+  {id:"e46",type:"Verb",deutsch:"wechseln",prasens:"wechsle",prateritum:"wechselte",perfekt:"hat gewechselt",español:"cambiar, intercambiar"},
+  {id:"e47",type:"Substantiv",deutsch:"Zopf",artikel:"der",plural:"die Zöpfe",español:"trenza, coleta"},
+  {id:"e48",type:"Substantiv",deutsch:"Wimperntusche",artikel:"die",plural:"—",español:"rímel, máscara de pestañas"},
+  {id:"e49",type:"Substantiv",deutsch:"Augenbrauenstift",artikel:"der",plural:"die Augenbrauenstifte",español:"lápiz de cejas"},
+  {id:"e50",type:"Substantiv",deutsch:"Lidschatten",artikel:"der",plural:"—",español:"sombra de ojos"},
+  {id:"e51",type:"Verb",deutsch:"zupfen",prasens:"zupfe",prateritum:"zupfte",perfekt:"hat gezupft",español:"depilar, arrancar (cejas)"},
+  {id:"e52",type:"Verb",deutsch:"weinen",prasens:"weine",prateritum:"weinte",perfekt:"hat geweint",español:"llorar"},
+  {id:"e53",type:"Substantiv",deutsch:"Träne",artikel:"die",plural:"die Tränen",español:"lágrima"},
+  {id:"e54",type:"Substantiv",deutsch:"Erfindung",artikel:"die",plural:"die Erfindungen",español:"invención, invento"},
+  {id:"e55",type:"Substantiv",deutsch:"Ergebnis",artikel:"das",plural:"die Ergebnisse",español:"resultado"},
+  {id:"e56",type:"Adjektiv",deutsch:"wiederkehrend",español:"recurrente"},
+  {id:"e57",type:"Verb",deutsch:"zurückkehren",prasens:"kehre zurück",prateritum:"kehrte zurück",perfekt:"ist zurückgekehrt",español:"volver, regresar"},
+  {id:"e58",type:"Adjektiv",deutsch:"zukünftig",español:"futuro, próximo"},
+  {id:"e59",type:"Adjektiv",deutsch:"einmalig",español:"único, excepcional"},
+  {id:"e60",type:"Adjektiv",deutsch:"bewusst",español:"consciente, deliberado"},
+  {id:"e61",type:"Adjektiv",deutsch:"unterbewusst",español:"subconsciente"},
+  {id:"e62",type:"Adjektiv",deutsch:"überfordert",español:"abrumado, desbordado"},
+  {id:"e63",type:"Verb",deutsch:"ankündigen",prasens:"kündige an",prateritum:"kündigte an",perfekt:"hat angekündigt",español:"anunciar, avisar"},
+  {id:"e64",type:"Substantiv",deutsch:"Kaufkraft",artikel:"die",plural:"—",español:"poder adquisitivo"},
+  {id:"e65",type:"Substantiv",deutsch:"Umschlag",artikel:"der",plural:"die Umschläge",español:"sobre (carta); portada"},
+  {id:"s1",type:"Adjektiv",deutsch:"schrecklich",español:"terrible, horrible"},
+  {id:"s2",type:"Adjektiv",deutsch:"überteuert",español:"demasiado caro, a precio abusivo"},
+  {id:"s3",type:"Adverb",deutsch:"jenseits",español:"más allá de, al otro lado de"},
+  {id:"s4",type:"Verb",deutsch:"entdecken",prasens:"entdecke",prateritum:"entdeckte",perfekt:"hat entdeckt",español:"descubrir"},
+  {id:"s5",type:"Verb",deutsch:"entkommen",prasens:"entkomme",prateritum:"entkam",perfekt:"ist entkommen",español:"escapar, huir"},
+  {id:"s6",type:"Ausdruck",deutsch:"Die Nägel werden kurz gehalten",kontext:"las uñas se mantienen cortas",español:"las uñas se mantienen cortas"},
+  {id:"s7",type:"Adjektiv",deutsch:"durchsichtig",español:"transparente"},
+  {id:"s8",type:"Substantiv",deutsch:"Zurückhaltung",artikel:"die",plural:"—",español:"contención, moderación"},
+  {id:"s9",type:"Substantiv",deutsch:"Schlichtheit",artikel:"die",plural:"—",español:"simplicidad, sobriedad"},
+  {id:"s10",type:"Ausdruck",deutsch:"Im Gegensatz",kontext:"conector adversativo",español:"en contraste, a diferencia de"},
+  {id:"s11",type:"Ausdruck",deutsch:"zu beachten",kontext:"algo que se debe tener en cuenta",español:"tener en cuenta"},
+  {id:"s12",type:"Ausdruck",deutsch:"In der Zwischenzeit",kontext:"conector temporal",español:"mientras tanto"},
+  {id:"s13",type:"Adjektiv",deutsch:"unbestreitbar",español:"innegable, indiscutible"},
+];
+
+const CATS = {
+  Substantiv:{color:"#4A7FC1"},Verb:{color:"#2E8B74"},Adjektiv:{color:"#8B6DB5"},
+  Adverb:{color:"#B56D8B"},Konjunktion:{color:"#B58A2E"},Ausdruck:{color:"#6D8BB5"}
+};
+
+function shuffle(a){return [...a].sort(()=>Math.random()-0.5);}
+
+function loadVocab(){
+  try{const s=localStorage.getItem(STORAGE_KEY);if(s){const p=JSON.parse(s);if(p.length>0)return p;}}catch{}
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(VOCAB_DATA));
+  return VOCAB_DATA;
+}
+function saveVocabLS(v){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(v));}catch{}}
+
+function Badge({cat}){
+  const c=CATS[cat]||CATS.Ausdruck;
+  return <span style={{fontSize:11,padding:"2px 8px",borderRadius:20,background:c.color+"18",color:c.color,border:`0.5px solid ${c.color}40`,fontWeight:600,whiteSpace:"nowrap"}}>{cat}</span>;
+}
+
+function WordCard({word,onDelete}){
+  const [open,setOpen]=useState(false);
+  const lbl = word.type==="Substantiv"?`${word.artikel} ${word.deutsch}`:word.deutsch;
+  return(
+    <div onClick={()=>setOpen(o=>!o)} style={{borderRadius:10,border:"1px solid var(--border)",background:"var(--bg-primary)",padding:"12px 16px",cursor:"pointer",marginBottom:8}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"space-between"}}>
+        <div style={{display:"flex",alignItems:"center",gap:8}}><Badge cat={word.type}/><span style={{fontWeight:600,fontSize:15}}>{lbl}</span></div>
+        <span style={{fontSize:11,color:"var(--text-tertiary)"}}>{open?"▲":"▼"}</span>
+      </div>
+      <div style={{fontSize:12,color:"var(--text-secondary)",marginTop:3}}>{word.español}</div>
+      {open&&<div style={{marginTop:10,paddingTop:10,borderTop:"1px solid var(--border)",fontSize:13}}>
+        {word.type==="Substantiv"&&<div style={{color:"var(--text-secondary)"}}>Plural: <b>{word.plural||"—"}</b></div>}
+        {word.type==="Verb"&&<div style={{display:"flex",flexDirection:"column",gap:2}}>
+          {[["Infinitiv",word.deutsch],["Präsens",word.prasens],["Präteritum",word.prateritum],["Perfekt",word.perfekt]].map(([l,v])=>v&&<div key={l} style={{color:"var(--text-secondary)"}}>{l}: <b>{v}</b></div>)}
+        </div>}
+        {word.type==="Konjunktion"&&word.funktion&&<div style={{color:"var(--text-secondary)"}}>Funktion: <b>{word.funktion}</b></div>}
+        {word.type==="Ausdruck"&&word.kontext&&<div style={{color:"var(--text-secondary)"}}>Kontext: <b>{word.kontext}</b></div>}
+        <button onClick={e=>{e.stopPropagation();onDelete(word.id);}} style={{marginTop:8,fontSize:11,color:"var(--text-tertiary)",background:"none",border:"none",cursor:"pointer",padding:0}}>löschen</button>
+      </div>}
+    </div>
+  );
+}
+
+function FlashcardMode({vocab}){
+  const [dir,setDir]=useState(null);
+  const [cards,setCards]=useState([]);
+  const [idx,setIdx]=useState(0);
+  const [flipped,setFlipped]=useState(false);
+
+  useEffect(()=>{if(dir){setCards(shuffle(vocab));setIdx(0);setFlipped(false);}},[dir]);
+
+  if(!dir) return(
+    <div style={{display:"flex",flexDirection:"column",gap:12}}>
+      <div style={{fontSize:13,color:"var(--text-secondary)",marginBottom:4}}>Richtung wählen — elige dirección:</div>
+      {[["de->es","🇩🇪 → 🇪🇸"],["es->de","🇪🇸 → 🇩🇪"],["mixed","Gemischt"]].map(([v,l])=>(
+        <button key={v} onClick={()=>setDir(v)} style={{padding:"16px",borderRadius:12,border:"1px solid var(--border)",background:"var(--bg-secondary)",cursor:"pointer",fontSize:15,fontWeight:600,textAlign:"center"}}>{l}</button>
+      ))}
+    </div>
+  );
+
+  if(!cards.length) return null;
+  const card = cards[idx%cards.length];
+  const actualDir = dir==="mixed"?(idx%2===0?"de->es":"es->de"):dir;
+  const deLabel = card.type==="Substantiv"?`${card.artikel} ${card.deutsch}`:card.deutsch;
+  const front = actualDir==="de->es"?deLabel:card.español;
+  const back  = actualDir==="de->es"?card.español:deLabel;
+
+  const goNext=()=>{setFlipped(false);setTimeout(()=>setIdx(i=>i+1),120);};
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:16,alignItems:"center"}}>
+      <div style={{fontSize:12,color:"var(--text-tertiary)"}}>{(idx%cards.length)+1} / {cards.length}</div>
+      <div onClick={()=>setFlipped(f=>!f)} style={{width:"100%",minHeight:180,borderRadius:16,border:"1px solid var(--border-md)",background:flipped?"var(--bg-secondary)":"var(--bg-primary)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:"28px 20px",textAlign:"center",gap:10,transition:"background 0.15s"}}>
+        <Badge cat={card.type}/>
+        <div style={{fontSize:26,fontWeight:700,marginTop:4,lineHeight:1.3}}>{flipped?back:front}</div>
+        {!flipped&&<div style={{fontSize:12,color:"var(--text-tertiary)",marginTop:6}}>Tippen zum Umdrehen ↻</div>}
+        {flipped&&card.type==="Verb"&&<div style={{fontSize:12,color:"var(--text-tertiary)",marginTop:4}}>{[card.prasens,card.prateritum,card.perfekt].filter(Boolean).join(" · ")}</div>}
+      </div>
+      {flipped&&<div style={{display:"flex",gap:10,width:"100%"}}>
+        <button onClick={goNext} style={{flex:1,padding:"14px",borderRadius:12,border:"1px solid #2E8B7440",background:"#2E8B7415",color:"#2E8B74",cursor:"pointer",fontSize:15,fontWeight:700}}>✓ Gewusst</button>
+        <button onClick={goNext} style={{flex:1,padding:"14px",borderRadius:12,border:"1px solid #B55A2E40",background:"#B55A2E15",color:"#B55A2E",cursor:"pointer",fontSize:15,fontWeight:700}}>✗ Nochmal</button>
+      </div>}
+      <button onClick={()=>setDir(null)} style={{fontSize:12,color:"var(--text-tertiary)",background:"none",border:"none",cursor:"pointer"}}>← Richtung ändern</button>
+    </div>
+  );
+}
+
+function QuizMode({vocab}){
+  const [q,setQ]=useState(null);
+  const [selected,setSelected]=useState(null);
+  const [score,setScore]=useState({ok:0,total:0});
+  const timer=useRef(null);
+
+  const generate=useCallback(()=>{
+    setSelected(null);
+    if(timer.current) clearTimeout(timer.current);
+    const verbs=vocab.filter(w=>w.type==="Verb"&&w.prateritum&&w.perfekt);
+    const all=vocab;
+    const rand=Math.random();
+    let question;
+
+    if(verbs.length>=3&&rand<0.4){
+      const verb=verbs[Math.floor(Math.random()*verbs.length)];
+      const missing=Math.random()<0.5?"prateritum":"perfekt";
+      const label=missing==="prateritum"?"Präteritum":"Perfekt";
+      const correctVal=verb[missing];
+      const others=shuffle(verbs.filter(v=>v.id!==verb.id)).slice(0,3).map(v=>v[missing]).filter(Boolean);
+      while(others.length<3) others.push(["machte","hatte","ging","kam","war","konnte"][others.length]);
+      const options=shuffle([correctVal,...others.slice(0,3)]);
+      const frage=missing==="prateritum"
+        ?`${verb.deutsch} → ${verb.prasens} → ___ → ${verb.perfekt}`
+        :`${verb.deutsch} → ${verb.prasens} → ${verb.prateritum} → ___`;
+      question={typ:"Verbform",frage,hint:`¿Cuál es el ${label}?`,correct:correctVal,options,word:verb};
+    } else if(rand<0.7){
+      const w=all[Math.floor(Math.random()*all.length)];
+      const deLabel=w.type==="Substantiv"?`${w.artikel} ${w.deutsch}`:w.deutsch;
+      const others=shuffle(all.filter(v=>v.id!==w.id)).slice(0,3).map(v=>v.español);
+      const options=shuffle([w.español,...others]);
+      question={typ:"DE → ES",frage:deLabel,hint:"Was bedeutet das?",correct:w.español,options,word:w};
+    } else {
+      const w=all[Math.floor(Math.random()*all.length)];
+      const deLabel=w.type==="Substantiv"?`${w.artikel} ${w.deutsch}`:w.deutsch;
+      const others=shuffle(all.filter(v=>v.id!==w.id)).slice(0,3).map(v=>v.type==="Substantiv"?`${v.artikel} ${v.deutsch}`:v.deutsch);
+      const options=shuffle([deLabel,...others]);
+      question={typ:"ES → DE",frage:w.español,hint:"Wie heißt das auf Deutsch?",correct:deLabel,options,word:w};
+    }
+    setQ(question);
+  },[vocab]);
+
+  useEffect(()=>{generate();},[generate]);
+
+  const pick=(opt)=>{
+    if(selected) return;
+    setSelected(opt);
+    setScore(s=>({ok:s.ok+(opt===q.correct?1:0),total:s.total+1}));
+    timer.current=setTimeout(()=>generate(),1300);
+  };
+
+  if(!q) return null;
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <span style={{fontSize:11,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:1}}>{q.typ}</span>
+        <span style={{fontSize:12,color:"var(--text-secondary)",fontWeight:600}}>{score.ok}/{score.total}</span>
+      </div>
+      <div style={{borderRadius:14,border:"1px solid var(--border-md)",background:"var(--bg-secondary)",padding:"22px 18px",textAlign:"center"}}>
+        <Badge cat={q.word.type}/>
+        <div style={{fontSize:26,fontWeight:700,margin:"12px 0 6px",lineHeight:1.3}}>{q.frage}</div>
+        <div style={{fontSize:12,color:"var(--text-tertiary)"}}>{q.hint}</div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+        {q.options.map((opt,i)=>{
+          let bg="var(--bg-primary)",border="1px solid var(--border)",color="var(--text-primary)";
+          if(selected){
+            if(opt===q.correct){bg="#2E8B7415";border="2px solid #2E8B74";color="#2E8B74";}
+            else if(opt===selected){bg="#B55A2E15";border="2px solid #B55A2E";color="#B55A2E";}
+            else{color="var(--text-tertiary)";}
+          }
+          return(
+            <button key={i} onClick={()=>pick(opt)} disabled={!!selected} style={{padding:"16px 10px",borderRadius:12,border,background:bg,color,cursor:selected?"default":"pointer",fontSize:13,fontWeight:600,textAlign:"center",lineHeight:1.4,transition:"all 0.12s"}}>
+              {opt}
+            </button>
+          );
+        })}
+      </div>
+      <button onClick={generate} style={{alignSelf:"flex-end",fontSize:12,color:"var(--text-tertiary)",background:"none",border:"none",cursor:"pointer"}}>Überspringen →</button>
+    </div>
+  );
+}
+
+function App(){
+  const [view,setView]=useState("list");
+  const [vocab,setVocab]=useState([]);
+  const [filter,setFilter]=useState("Alle");
+  const [practiceMode,setPracticeMode]=useState(null);
+
+  useEffect(()=>{ setVocab(loadVocab()); },[]);
+
+  const deleteWord=(id)=>{ const v=vocab.filter(w=>w.id!==id); setVocab(v); saveVocabLS(v); };
+
+  const filtered=filter==="Alle"?vocab:vocab.filter(w=>w.type===filter);
+  const cats=["Alle",...Object.keys(CATS)];
+
+  const NavBtn=({v,l})=>(
+    <button onClick={()=>{setView(v);if(v!=="practice")setPracticeMode(null);}} style={{fontSize:14,padding:"8px 18px",borderRadius:20,background:view===v?"var(--text-primary)":"var(--bg-secondary)",color:view===v?"var(--bg-primary)":"var(--text-secondary)",border:"1px solid var(--border)",cursor:"pointer",fontWeight:view===v?700:400}}>{l}</button>
+  );
+
+  return(
+    <div style={{maxWidth:540,margin:"0 auto",padding:"20px 16px 60px"}}>
+      <div style={{marginBottom:20}}>
+        <div style={{fontSize:11,color:"var(--text-tertiary)",letterSpacing:1,textTransform:"uppercase",marginBottom:2}}>Vokabeltrainer</div>
+        <div style={{display:"flex",alignItems:"baseline",gap:10}}>
+          <span style={{fontSize:24,fontWeight:700}}>Mein Wortschatz</span>
+          <span style={{fontSize:13,color:"var(--text-tertiary)"}}>{vocab.length} Wörter</span>
+        </div>
+      </div>
+
+      <div style={{display:"flex",gap:8,marginBottom:20}}>
+        <NavBtn v="list" l="Wörter"/><NavBtn v="practice" l="Üben"/>
+      </div>
+
+      {view==="list"&&<div>
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
+          {cats.map(c=>{
+            const cc=CATS[c];
+            return<button key={c} onClick={()=>setFilter(c)} style={{fontSize:11,padding:"4px 11px",borderRadius:20,background:filter===c?(cc?cc.color+"20":"var(--text-primary)"):"transparent",color:filter===c?(cc?cc.color:"var(--bg-primary)"):"var(--text-tertiary)",border:`1px solid ${filter===c?(cc?cc.color:"var(--text-primary)"):"var(--border)"}`,cursor:"pointer",fontWeight:filter===c?700:400}}>
+              {c} ({c==="Alle"?vocab.length:vocab.filter(w=>w.type===c).length})
+            </button>;
+          })}
+        </div>
+        {filtered.length===0
+          ?<div style={{color:"var(--text-tertiary)",fontSize:14,padding:"2rem 0"}}>Keine Wörter.</div>
+          :filtered.map(w=><WordCard key={w.id} word={w} onDelete={deleteWord}/>)
+        }
+      </div>}
+
+      {view==="practice"&&<div>
+        {vocab.length<4
+          ?<div style={{color:"var(--text-tertiary)",fontSize:14}}>Mindestens 4 Wörter nötig.</div>
+          :!practiceMode
+            ?<div style={{display:"flex",flexDirection:"column",gap:12}}>
+              <div style={{fontSize:13,color:"var(--text-secondary)",marginBottom:4}}>Wähle deinen Übungsmodus:</div>
+              <button onClick={()=>setPracticeMode("flashcard")} style={{padding:"20px",borderRadius:14,border:"1px solid var(--border)",background:"var(--bg-primary)",cursor:"pointer",textAlign:"left"}}>
+                <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>🃏 Flashcards</div>
+                <div style={{fontSize:13,color:"var(--text-secondary)"}}>Wort sehen → umdrehen → Deutsch ↔ Español</div>
+              </button>
+              <button onClick={()=>setPracticeMode("quiz")} style={{padding:"20px",borderRadius:14,border:"1px solid var(--border)",background:"var(--bg-primary)",cursor:"pointer",textAlign:"left"}}>
+                <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>⚡ Schnellquiz</div>
+                <div style={{fontSize:13,color:"var(--text-secondary)"}}>4 Antworten — Übersetzungen & Verbformen</div>
+              </button>
+            </div>
+            :<div>
+              <button onClick={()=>setPracticeMode(null)} style={{fontSize:12,color:"var(--text-tertiary)",background:"none",border:"none",cursor:"pointer",marginBottom:16,padding:0}}>← Modus wechseln</button>
+              {practiceMode==="flashcard"&&<FlashcardMode vocab={vocab}/>}
+              {practiceMode==="quiz"&&<QuizMode vocab={vocab}/>}
+            </div>
+        }
+      </div>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
