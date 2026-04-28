@@ -1,49 +1,10 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Deutsch Vokabeltrainer</title>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9f9f7;color:#1a1a1a;min-height:100vh}
-  button{font-family:inherit;outline:none}
-  textarea,input{font-family:inherit;outline:none}
-  :root{
-    --bg-primary:#ffffff;
-    --bg-secondary:#f4f3ef;
-    --text-primary:#1a1a1a;
-    --text-secondary:#555550;
-    --text-tertiary:#999990;
-    --border:#e0dfd8;
-    --border-md:#ccccc4;
-    --radius-md:8px;
-    --radius-lg:12px;
-  }
-  @media(prefers-color-scheme:dark){
-    :root{
-      --bg-primary:#1e1e1c;
-      --bg-secondary:#2a2a27;
-      --text-primary:#f0f0ec;
-      --text-secondary:#aaa9a0;
-      --text-tertiary:#666660;
-      --border:#3a3a36;
-      --border-md:#4a4a46;
-    }
-    body{background:#161614;color:#f0f0ec}
-  }
-</style>
-</head>
-<body>
-<div id="root"></div>
-<script type="text/babel">
-const {useState,useEffect,useCallback,useRef} = React;
-const STORAGE_KEY = "deutsch-vokabeln-v3";
+import { useState, useEffect, useCallback, useRef } from "react";
 
-const VOCAB_DATA = [
+const STORAGE_KEY = "deutsch-vokabeln-v3";
+const MASTERY_KEY = "deutsch-mastery-v1";
+const MASTERY_THRESHOLD = 3;
+
+const EXTRA_SEED = [
   {id:"e1",type:"Substantiv",deutsch:"Stofftier",artikel:"das",plural:"die Stofftiere",español:"peluche, animal de tela"},
   {id:"e2",type:"Substantiv",deutsch:"Synchronisation",artikel:"die",plural:"—",español:"doblaje, sincronización"},
   {id:"e3",type:"Verb",deutsch:"synchronisieren",prasens:"synchronisiere",prateritum:"synchronisierte",perfekt:"hat synchronisiert",español:"doblar, sincronizar"},
@@ -51,15 +12,15 @@ const VOCAB_DATA = [
   {id:"e5",type:"Substantiv",deutsch:"Wendung",artikel:"die",plural:"die Wendungen",español:"giro, expresión"},
   {id:"e6",type:"Substantiv",deutsch:"Sprichwort",artikel:"das",plural:"die Sprichwörter",español:"proverbio, refrán"},
   {id:"e7",type:"Ausdruck",deutsch:"Daumen hoch",kontext:"aprobación informal",español:"pulgar arriba"},
-  {id:"e8",type:"Ausdruck",deutsch:"jemanden um den Finger wickeln",kontext:"manipular a alguien con encanto",español:"tener a alguien en el bolsillo"},
-  {id:"e9",type:"Ausdruck",deutsch:"einen grünen Daumen haben",kontext:"solo para plantas",español:"tener buena mano para las plantas"},
+  {id:"e8",type:"Ausdruck",deutsch:"jemanden um den Finger wickeln",kontext:"manipular con encanto",español:"tener en el bolsillo"},
+  {id:"e9",type:"Ausdruck",deutsch:"einen grünen Daumen haben",kontext:"solo para plantas",español:"buena mano para las plantas"},
   {id:"e10",type:"Ausdruck",deutsch:"etwas in die Finger bekommen",kontext:"conseguir algo que querías",español:"hacerse con algo"},
   {id:"e11",type:"Substantiv",deutsch:"Augenring",artikel:"der",plural:"die Augenringe",español:"ojera"},
   {id:"e12",type:"Substantiv",deutsch:"Tränensack",artikel:"der",plural:"die Tränensäcke",español:"bolsa bajo el ojo"},
   {id:"e13",type:"Verb",deutsch:"schummeln",prasens:"schummle",prateritum:"schummelte",perfekt:"hat geschummelt",español:"hacer trampa"},
   {id:"e14",type:"Verb",deutsch:"erklären",prasens:"erkläre",prateritum:"erklärte",perfekt:"hat erklärt",español:"explicar"},
   {id:"e15",type:"Adverb",deutsch:"eigentlich",español:"en realidad, de hecho"},
-  {id:"e16",type:"Ausdruck",deutsch:"die Welt liegt jemandem zu Füßen",kontext:"alguien tiene todo a su disposición",español:"el mundo está a los pies de alguien"},
+  {id:"e16",type:"Ausdruck",deutsch:"die Welt liegt jemandem zu Füßen",kontext:"alguien tiene todo a su disposición",español:"el mundo a los pies de alguien"},
   {id:"e17",type:"Ausdruck",deutsch:"Du hast Recht",kontext:"confirmar que alguien tiene razón",español:"tienes razón"},
   {id:"e18",type:"Adjektiv",deutsch:"stumm",español:"mudo, silencioso"},
   {id:"e19",type:"Verb",deutsch:"erinnern",prasens:"erinnere mich",prateritum:"erinnerte mich",perfekt:"hat sich erinnert",español:"recordar, acordarse"},
@@ -80,9 +41,9 @@ const VOCAB_DATA = [
   {id:"e34",type:"Adjektiv",deutsch:"unregelmäßig",español:"irregular"},
   {id:"e35",type:"Verb",deutsch:"aufwachsen",prasens:"wachse auf",prateritum:"wuchs auf",perfekt:"ist aufgewachsen",español:"crecer, criarse"},
   {id:"e36",type:"Verb",deutsch:"kapieren",prasens:"kapiere",prateritum:"kapierte",perfekt:"hat kapiert",español:"entender, pillar (coloquial)"},
-  {id:"e37",type:"Verb",deutsch:"schnallen",prasens:"schnalle",prateritum:"schnallte",perfekt:"hat geschnallt",español:"entender, captar (slang)"},
-  {id:"e38",type:"Verb",deutsch:"raffen",prasens:"raffe",prateritum:"raffte",perfekt:"hat gerafft",español:"pillar, entender (slang)"},
-  {id:"e39",type:"Verb",deutsch:"durchschauen",prasens:"schaue durch",prateritum:"schaute durch",perfekt:"hat durchgeschaut",español:"calar, ver a través de"},
+  {id:"e37",type:"Verb",deutsch:"schnallen",prasens:"schnalle",prateritum:"schnallte",perfekt:"hat geschnallt",español:"captar (slang)"},
+  {id:"e38",type:"Verb",deutsch:"raffen",prasens:"raffe",prateritum:"raffte",perfekt:"hat gerafft",español:"pillar (slang)"},
+  {id:"e39",type:"Verb",deutsch:"durchschauen",prasens:"schaue durch",prateritum:"schaute durch",perfekt:"hat durchgeschaut",español:"calar, ver a través"},
   {id:"e40",type:"Substantiv",deutsch:"Überstunde",artikel:"die",plural:"die Überstunden",español:"hora extra"},
   {id:"e41",type:"Ausdruck",deutsch:"Bescheid geben / sagen",kontext:"informar a alguien",español:"avisar, hacer saber"},
   {id:"e42",type:"Adjektiv",deutsch:"verbreitet",español:"extendido, común"},
@@ -109,6 +70,8 @@ const VOCAB_DATA = [
   {id:"e63",type:"Verb",deutsch:"ankündigen",prasens:"kündige an",prateritum:"kündigte an",perfekt:"hat angekündigt",español:"anunciar, avisar"},
   {id:"e64",type:"Substantiv",deutsch:"Kaufkraft",artikel:"die",plural:"—",español:"poder adquisitivo"},
   {id:"e65",type:"Substantiv",deutsch:"Umschlag",artikel:"der",plural:"die Umschläge",español:"sobre (carta); portada"},
+];
+const BASE_SEED = [
   {id:"s1",type:"Adjektiv",deutsch:"schrecklich",español:"terrible, horrible"},
   {id:"s2",type:"Adjektiv",deutsch:"überteuert",español:"demasiado caro, a precio abusivo"},
   {id:"s3",type:"Adverb",deutsch:"jenseits",español:"más allá de, al otro lado de"},
@@ -123,249 +86,452 @@ const VOCAB_DATA = [
   {id:"s12",type:"Ausdruck",deutsch:"In der Zwischenzeit",kontext:"conector temporal",español:"mientras tanto"},
   {id:"s13",type:"Adjektiv",deutsch:"unbestreitbar",español:"innegable, indiscutible"},
 ];
+const SEED = [...EXTRA_SEED, ...BASE_SEED];
 
 const CATS = {
   Substantiv:{color:"#4A7FC1"},Verb:{color:"#2E8B74"},Adjektiv:{color:"#8B6DB5"},
   Adverb:{color:"#B56D8B"},Konjunktion:{color:"#B58A2E"},Ausdruck:{color:"#6D8BB5"}
 };
 
-function shuffle(a){return [...a].sort(()=>Math.random()-0.5);}
-
-function loadVocab(){
-  try{const s=localStorage.getItem(STORAGE_KEY);if(s){const p=JSON.parse(s);if(p.length>0)return p;}}catch{}
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(VOCAB_DATA));
-  return VOCAB_DATA;
-}
-function saveVocabLS(v){try{localStorage.setItem(STORAGE_KEY,JSON.stringify(v));}catch{}}
+function shuffle(a){return[...a].sort(()=>Math.random()-0.5);}
 
 function Badge({cat}){
   const c=CATS[cat]||CATS.Ausdruck;
-  return <span style={{fontSize:11,padding:"2px 8px",borderRadius:20,background:c.color+"18",color:c.color,border:`0.5px solid ${c.color}40`,fontWeight:600,whiteSpace:"nowrap"}}>{cat}</span>;
+  return <span style={{fontSize:11,padding:"2px 8px",borderRadius:20,background:c.color+"18",color:c.color,border:`0.5px solid ${c.color}40`,fontWeight:500,whiteSpace:"nowrap"}}>{cat}</span>;
 }
 
 function WordCard({word,onDelete}){
   const [open,setOpen]=useState(false);
-  const lbl = word.type==="Substantiv"?`${word.artikel} ${word.deutsch}`:word.deutsch;
+  const lbl=word.type==="Substantiv"?`${word.artikel} ${word.deutsch}`:word.deutsch;
   return(
-    <div onClick={()=>setOpen(o=>!o)} style={{borderRadius:10,border:"1px solid var(--border)",background:"var(--bg-primary)",padding:"12px 16px",cursor:"pointer",marginBottom:8}}>
+    <div onClick={()=>setOpen(o=>!o)} style={{borderRadius:10,border:"0.5px solid var(--color-border-tertiary)",background:"var(--color-background-primary)",padding:"12px 16px",cursor:"pointer",marginBottom:8}}>
       <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"space-between"}}>
-        <div style={{display:"flex",alignItems:"center",gap:8}}><Badge cat={word.type}/><span style={{fontWeight:600,fontSize:15}}>{lbl}</span></div>
-        <span style={{fontSize:11,color:"var(--text-tertiary)"}}>{open?"▲":"▼"}</span>
+        <div style={{display:"flex",alignItems:"center",gap:8}}><Badge cat={word.type}/><span style={{fontWeight:500,fontSize:15}}>{lbl}</span></div>
+        <span style={{fontSize:11,color:"var(--color-text-tertiary)"}}>{open?"▲":"▼"}</span>
       </div>
-      <div style={{fontSize:12,color:"var(--text-secondary)",marginTop:3}}>{word.español}</div>
-      {open&&<div style={{marginTop:10,paddingTop:10,borderTop:"1px solid var(--border)",fontSize:13}}>
-        {word.type==="Substantiv"&&<div style={{color:"var(--text-secondary)"}}>Plural: <b>{word.plural||"—"}</b></div>}
-        {word.type==="Verb"&&<div style={{display:"flex",flexDirection:"column",gap:2}}>
-          {[["Infinitiv",word.deutsch],["Präsens",word.prasens],["Präteritum",word.prateritum],["Perfekt",word.perfekt]].map(([l,v])=>v&&<div key={l} style={{color:"var(--text-secondary)"}}>{l}: <b>{v}</b></div>)}
-        </div>}
-        {word.type==="Konjunktion"&&word.funktion&&<div style={{color:"var(--text-secondary)"}}>Funktion: <b>{word.funktion}</b></div>}
-        {word.type==="Ausdruck"&&word.kontext&&<div style={{color:"var(--text-secondary)"}}>Kontext: <b>{word.kontext}</b></div>}
-        <button onClick={e=>{e.stopPropagation();onDelete(word.id);}} style={{marginTop:8,fontSize:11,color:"var(--text-tertiary)",background:"none",border:"none",cursor:"pointer",padding:0}}>löschen</button>
+      <div style={{fontSize:12,color:"var(--color-text-secondary)",marginTop:3}}>{word.español}</div>
+      {open&&<div style={{marginTop:10,paddingTop:10,borderTop:"0.5px solid var(--color-border-tertiary)",fontSize:13}}>
+        {word.type==="Substantiv"&&<div style={{color:"var(--color-text-secondary)"}}>Plural: <b>{word.plural||"—"}</b></div>}
+        {word.type==="Verb"&&<div style={{display:"flex",flexDirection:"column",gap:2}}>{[["Infinitiv",word.deutsch],["Präsens",word.prasens],["Präteritum",word.prateritum],["Perfekt",word.perfekt]].map(([l,v])=>v&&<div key={l} style={{color:"var(--color-text-secondary)"}}>{l}: <b>{v}</b></div>)}</div>}
+        {word.type==="Konjunktion"&&word.funktion&&<div style={{color:"var(--color-text-secondary)"}}>Funktion: <b>{word.funktion}</b></div>}
+        {word.type==="Ausdruck"&&word.kontext&&<div style={{color:"var(--color-text-secondary)"}}>Kontext: <b>{word.kontext}</b></div>}
+        <button onClick={e=>{e.stopPropagation();onDelete(word.id);}} style={{marginTop:8,fontSize:11,color:"var(--color-text-tertiary)",background:"none",border:"none",cursor:"pointer",padding:0}}>löschen</button>
       </div>}
     </div>
   );
 }
 
+// ── FLASHCARDS with mastery tracking ──────────────────────────────────
 function FlashcardMode({vocab}){
   const [dir,setDir]=useState(null);
   const [cards,setCards]=useState([]);
   const [idx,setIdx]=useState(0);
   const [flipped,setFlipped]=useState(false);
+  const [mastery,setMastery]=useState({}); // {id: count}
+  const [showStats,setShowStats]=useState(false);
 
-  useEffect(()=>{if(dir){setCards(shuffle(vocab));setIdx(0);setFlipped(false);}},[dir]);
+  useEffect(()=>{
+    try{const m=localStorage.getItem(MASTERY_KEY);if(m)setMastery(JSON.parse(m));}catch{}
+  },[]);
 
-  if(!dir) return(
+  useEffect(()=>{
+    if(dir){
+      const active=vocab.filter(w=>(mastery[w.id]||0)<MASTERY_THRESHOLD);
+      setCards(shuffle(active.length>0?active:vocab));
+      setIdx(0);setFlipped(false);
+    }
+  },[dir]);
+
+  const saveMastery=(m)=>{setMastery(m);try{localStorage.setItem(MASTERY_KEY,JSON.stringify(m));}catch{}};
+
+  const masteredCount=vocab.filter(w=>(mastery[w.id]||0)>=MASTERY_THRESHOLD).length;
+  const pendingCount=vocab.length-masteredCount;
+
+  if(showStats) return(
     <div style={{display:"flex",flexDirection:"column",gap:12}}>
-      <div style={{fontSize:13,color:"var(--text-secondary)",marginBottom:4}}>Richtung wählen — elige dirección:</div>
-      {[["de->es","🇩🇪 → 🇪🇸"],["es->de","🇪🇸 → 🇩🇪"],["mixed","Gemischt"]].map(([v,l])=>(
-        <button key={v} onClick={()=>setDir(v)} style={{padding:"16px",borderRadius:12,border:"1px solid var(--border)",background:"var(--bg-secondary)",cursor:"pointer",fontSize:15,fontWeight:600,textAlign:"center"}}>{l}</button>
-      ))}
+      <button onClick={()=>setShowStats(false)} style={{fontSize:12,color:"var(--color-text-tertiary)",background:"none",border:"none",cursor:"pointer",padding:0,alignSelf:"flex-start"}}>← Zurück</button>
+      <div style={{display:"flex",gap:10,marginBottom:4}}>
+        <div style={{flex:1,borderRadius:10,border:"0.5px solid #2E8B7440",background:"#2E8B7410",padding:"12px 14px",textAlign:"center"}}>
+          <div style={{fontSize:24,fontWeight:700,color:"#2E8B74"}}>{masteredCount}</div>
+          <div style={{fontSize:12,color:"var(--color-text-secondary)",marginTop:2}}>dominiert ✓</div>
+        </div>
+        <div style={{flex:1,borderRadius:10,border:"0.5px solid var(--color-border-secondary)",background:"var(--color-background-secondary)",padding:"12px 14px",textAlign:"center"}}>
+          <div style={{fontSize:24,fontWeight:700}}>{pendingCount}</div>
+          <div style={{fontSize:12,color:"var(--color-text-secondary)",marginTop:2}}>noch lernen</div>
+        </div>
+      </div>
+
+      {masteredCount>0&&<>
+        <div style={{fontSize:12,fontWeight:500,color:"#2E8B74",marginTop:4}}>✓ Gelernt ({masteredCount})</div>
+        {vocab.filter(w=>(mastery[w.id]||0)>=MASTERY_THRESHOLD).map(w=>(
+          <div key={w.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:8,background:"#2E8B7408",border:"0.5px solid #2E8B7430",fontSize:13}}>
+            <Badge cat={w.type}/>
+            <span style={{flex:1}}>{w.type==="Substantiv"?`${w.artikel} ${w.deutsch}`:w.deutsch}</span>
+            <span style={{fontSize:11,color:"var(--color-text-tertiary)"}}>{w.español}</span>
+          </div>
+        ))}
+      </>}
+
+      {pendingCount>0&&<>
+        <div style={{fontSize:12,fontWeight:500,color:"var(--color-text-secondary)",marginTop:4}}>⏳ Noch lernen ({pendingCount})</div>
+        {vocab.filter(w=>(mastery[w.id]||0)<MASTERY_THRESHOLD).map(w=>(
+          <div key={w.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:8,background:"var(--color-background-secondary)",fontSize:13}}>
+            <Badge cat={w.type}/>
+            <span style={{flex:1}}>{w.type==="Substantiv"?`${w.artikel} ${w.deutsch}`:w.deutsch}</span>
+            <div style={{display:"flex",gap:3}}>{[...Array(MASTERY_THRESHOLD)].map((_,i)=>(
+              <div key={i} style={{width:8,height:8,borderRadius:"50%",background:i<(mastery[w.id]||0)?"#2E8B74":"var(--color-border-secondary)"}}/>
+            ))}</div>
+          </div>
+        ))}
+      </>}
+
+      <button onClick={()=>{const m={};saveMastery(m);setShowStats(false);setDir(null);}} style={{marginTop:8,fontSize:12,color:"var(--color-text-tertiary)",background:"none",border:"0.5px solid var(--color-border-secondary)",borderRadius:20,padding:"6px 14px",cursor:"pointer",alignSelf:"flex-start"}}>
+        Fortschritt zurücksetzen
+      </button>
     </div>
   );
 
-  if(!cards.length) return null;
-  const card = cards[idx%cards.length];
-  const actualDir = dir==="mixed"?(idx%2===0?"de->es":"es->de"):dir;
-  const deLabel = card.type==="Substantiv"?`${card.artikel} ${card.deutsch}`:card.deutsch;
-  const front = actualDir==="de->es"?deLabel:card.español;
-  const back  = actualDir==="de->es"?card.español:deLabel;
+  if(!dir) return(
+    <div style={{display:"flex",flexDirection:"column",gap:12}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+        <div style={{fontSize:13,color:"var(--color-text-secondary)"}}>Richtung wählen:</div>
+        <button onClick={()=>setShowStats(true)} style={{fontSize:12,color:"var(--color-text-secondary)",background:"var(--color-background-secondary)",border:"0.5px solid var(--color-border-secondary)",borderRadius:20,padding:"4px 12px",cursor:"pointer"}}>
+          ✓ {masteredCount}/{vocab.length}
+        </button>
+      </div>
+      {[["de->es","🇩🇪 → 🇪🇸"],["es->de","🇪🇸 → 🇩🇪"],["mixed","Gemischt"]].map(([v,l])=>(
+        <button key={v} onClick={()=>setDir(v)} style={{padding:"16px",borderRadius:12,border:"0.5px solid var(--color-border-secondary)",background:"var(--color-background-secondary)",cursor:"pointer",fontSize:15,fontWeight:500}}>{l}</button>
+      ))}
+      {masteredCount>0&&<div style={{fontSize:12,color:"#2E8B74",textAlign:"center",marginTop:4}}>
+        {masteredCount} {masteredCount===1?"Wort dominiert":"Wörter dominiert"} — nur {pendingCount} verbleiben im Stapel
+      </div>}
+    </div>
+  );
 
-  const goNext=()=>{setFlipped(false);setTimeout(()=>setIdx(i=>i+1),120);};
+  if(!cards.length) return(
+    <div style={{textAlign:"center",padding:"2rem",color:"var(--color-text-secondary)"}}>
+      <div style={{fontSize:32,marginBottom:8}}>🎉</div>
+      <div style={{fontSize:16,fontWeight:500,marginBottom:4}}>Alle Karten dominiert!</div>
+      <div style={{fontSize:13,color:"var(--color-text-tertiary)",marginBottom:16}}>Du hast alle {vocab.length} Wörter {MASTERY_THRESHOLD}× richtig.</div>
+      <button onClick={()=>setDir(null)} style={{fontSize:13,padding:"8px 18px",borderRadius:20,background:"var(--color-text-primary)",color:"var(--color-background-primary)",border:"none",cursor:"pointer"}}>Neu starten</button>
+    </div>
+  );
+
+  const card=cards[idx%cards.length];
+  const ad=dir==="mixed"?(idx%2===0?"de->es":"es->de"):dir;
+  const deL=card.type==="Substantiv"?`${card.artikel} ${card.deutsch}`:card.deutsch;
+  const front=ad==="de->es"?deL:card.español;
+  const back=ad==="de->es"?card.español:deL;
+  const cardMastery=mastery[card.id]||0;
+
+  const markCorrect=()=>{
+    const nm={...mastery,[card.id]:(cardMastery+1)};
+    saveMastery(nm);
+    setFlipped(false);
+    setTimeout(()=>{
+      const active=vocab.filter(w=>(nm[w.id]||0)<MASTERY_THRESHOLD);
+      if(active.length===0){setCards([]);return;}
+      if((nm[card.id]||0)>=MASTERY_THRESHOLD){
+        setCards(c=>c.filter(x=>x.id!==card.id));
+      } else {
+        setIdx(i=>i+1);
+      }
+    },120);
+  };
+
+  const markWrong=()=>{
+    const nm={...mastery,[card.id]:Math.max(0,(cardMastery-1))};
+    saveMastery(nm);
+    setFlipped(false);
+    setTimeout(()=>setIdx(i=>i+1),120);
+  };
+
+  const activeCount=vocab.filter(w=>(mastery[w.id]||0)<MASTERY_THRESHOLD).length;
 
   return(
     <div style={{display:"flex",flexDirection:"column",gap:16,alignItems:"center"}}>
-      <div style={{fontSize:12,color:"var(--text-tertiary)"}}>{(idx%cards.length)+1} / {cards.length}</div>
-      <div onClick={()=>setFlipped(f=>!f)} style={{width:"100%",minHeight:180,borderRadius:16,border:"1px solid var(--border-md)",background:flipped?"var(--bg-secondary)":"var(--bg-primary)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",padding:"28px 20px",textAlign:"center",gap:10,transition:"background 0.15s"}}>
-        <Badge cat={card.type}/>
-        <div style={{fontSize:26,fontWeight:700,marginTop:4,lineHeight:1.3}}>{flipped?back:front}</div>
-        {!flipped&&<div style={{fontSize:12,color:"var(--text-tertiary)",marginTop:6}}>Tippen zum Umdrehen ↻</div>}
-        {flipped&&card.type==="Verb"&&<div style={{fontSize:12,color:"var(--text-tertiary)",marginTop:4}}>{[card.prasens,card.prateritum,card.perfekt].filter(Boolean).join(" · ")}</div>}
+      <div style={{display:"flex",justifyContent:"space-between",width:"100%",alignItems:"center"}}>
+        <div style={{fontSize:12,color:"var(--color-text-tertiary)"}}>{(idx%Math.max(cards.length,1))+1} / {cards.length}</div>
+        <button onClick={()=>setShowStats(true)} style={{fontSize:12,color:"#2E8B74",background:"#2E8B7412",border:"0.5px solid #2E8B7430",borderRadius:20,padding:"3px 10px",cursor:"pointer"}}>
+          ✓ {masteredCount}/{vocab.length}
+        </button>
       </div>
-      {flipped&&<div style={{display:"flex",gap:10,width:"100%"}}>
-        <button onClick={goNext} style={{flex:1,padding:"14px",borderRadius:12,border:"1px solid #2E8B7440",background:"#2E8B7415",color:"#2E8B74",cursor:"pointer",fontSize:15,fontWeight:700}}>✓ Gewusst</button>
-        <button onClick={goNext} style={{flex:1,padding:"14px",borderRadius:12,border:"1px solid #B55A2E40",background:"#B55A2E15",color:"#B55A2E",cursor:"pointer",fontSize:15,fontWeight:700}}>✗ Nochmal</button>
-      </div>}
-      <button onClick={()=>setDir(null)} style={{fontSize:12,color:"var(--text-tertiary)",background:"none",border:"none",cursor:"pointer"}}>← Richtung ändern</button>
+
+      <div onClick={()=>setFlipped(f=>!f)} style={{
+        width:"100%",minHeight:180,borderRadius:16,border:"0.5px solid var(--color-border-secondary)",
+        background:flipped?"var(--color-background-secondary)":"var(--color-background-primary)",
+        display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+        cursor:"pointer",padding:"28px 20px",textAlign:"center",gap:8,transition:"background 0.15s"
+      }}>
+        <Badge cat={card.type}/>
+        <div style={{fontSize:26,fontWeight:500,marginTop:4,lineHeight:1.3}}>{flipped?back:front}</div>
+        {!flipped&&<div style={{fontSize:12,color:"var(--color-text-tertiary)",marginTop:6}}>Tippen zum Umdrehen ↻</div>}
+        {flipped&&card.type==="Verb"&&<div style={{fontSize:12,color:"var(--color-text-tertiary)",marginTop:4}}>{[card.prasens,card.prateritum,card.perfekt].filter(Boolean).join(" · ")}</div>}
+      </div>
+
+      <div style={{display:"flex",gap:6,alignItems:"center"}}>
+        {[...Array(MASTERY_THRESHOLD)].map((_,i)=>(
+          <div key={i} style={{width:10,height:10,borderRadius:"50%",background:i<cardMastery?"#2E8B74":"var(--color-border-secondary)",transition:"background 0.2s"}}/>
+        ))}
+        <span style={{fontSize:11,color:"var(--color-text-tertiary)",marginLeft:4}}>{cardMastery}/{MASTERY_THRESHOLD}</span>
+      </div>
+
+      {flipped&&(
+        <div style={{display:"flex",gap:10,width:"100%"}}>
+          <button onClick={markWrong} style={{flex:1,padding:"14px",borderRadius:12,border:"0.5px solid #B55A2E40",background:"#B55A2E12",color:"#B55A2E",cursor:"pointer",fontSize:14,fontWeight:500}}>✗ Nochmal</button>
+          <button onClick={markCorrect} style={{flex:1,padding:"14px",borderRadius:12,border:"0.5px solid #2E8B7440",background:"#2E8B7412",color:"#2E8B74",cursor:"pointer",fontSize:14,fontWeight:500}}>✓ Gewusst</button>
+        </div>
+      )}
+      <button onClick={()=>setDir(null)} style={{fontSize:12,color:"var(--color-text-tertiary)",background:"none",border:"none",cursor:"pointer"}}>← Richtung ändern</button>
     </div>
   );
 }
 
+// ── SCHNELLQUIZ ──────────────────────────────────────────────────────
 function QuizMode({vocab}){
   const [q,setQ]=useState(null);
-  const [selected,setSelected]=useState(null);
+  const [sel,setSel]=useState(null);
   const [score,setScore]=useState({ok:0,total:0});
-  const timer=useRef(null);
+  const tmr=useRef(null);
 
-  const generate=useCallback(()=>{
-    setSelected(null);
-    if(timer.current) clearTimeout(timer.current);
+  const gen=useCallback(()=>{
+    setSel(null);if(tmr.current)clearTimeout(tmr.current);
     const verbs=vocab.filter(w=>w.type==="Verb"&&w.prateritum&&w.perfekt);
-    const all=vocab;
-    const rand=Math.random();
-    let question;
-
-    if(verbs.length>=3&&rand<0.4){
-      const verb=verbs[Math.floor(Math.random()*verbs.length)];
-      const missing=Math.random()<0.5?"prateritum":"perfekt";
-      const label=missing==="prateritum"?"Präteritum":"Perfekt";
-      const correctVal=verb[missing];
-      const others=shuffle(verbs.filter(v=>v.id!==verb.id)).slice(0,3).map(v=>v[missing]).filter(Boolean);
-      while(others.length<3) others.push(["machte","hatte","ging","kam","war","konnte"][others.length]);
-      const options=shuffle([correctVal,...others.slice(0,3)]);
-      const frage=missing==="prateritum"
-        ?`${verb.deutsch} → ${verb.prasens} → ___ → ${verb.perfekt}`
-        :`${verb.deutsch} → ${verb.prasens} → ${verb.prateritum} → ___`;
-      question={typ:"Verbform",frage,hint:`¿Cuál es el ${label}?`,correct:correctVal,options,word:verb};
-    } else if(rand<0.7){
+    const all=vocab;const r=Math.random();let question;
+    if(verbs.length>=3&&r<0.4){
+      const vb=verbs[Math.floor(Math.random()*verbs.length)];
+      const mis=Math.random()<0.5?"prateritum":"perfekt";
+      const lbl=mis==="prateritum"?"Präteritum":"Perfekt";
+      const cv=vb[mis];
+      const oth=shuffle(verbs.filter(v=>v.id!==vb.id)).slice(0,3).map(v=>v[mis]).filter(Boolean);
+      while(oth.length<3)oth.push(["machte","hatte","ging","kam"][oth.length]);
+      const opts=shuffle([cv,...oth.slice(0,3)]);
+      const frage=mis==="prateritum"?`${vb.deutsch} → ${vb.prasens} → ___ → ${vb.perfekt}`:`${vb.deutsch} → ${vb.prasens} → ${vb.prateritum} → ___`;
+      question={typ:"Verbform",frage,hint:`¿Cuál es el ${lbl}?`,correct:cv,options:opts,word:vb};
+    } else if(r<0.7){
       const w=all[Math.floor(Math.random()*all.length)];
-      const deLabel=w.type==="Substantiv"?`${w.artikel} ${w.deutsch}`:w.deutsch;
-      const others=shuffle(all.filter(v=>v.id!==w.id)).slice(0,3).map(v=>v.español);
-      const options=shuffle([w.español,...others]);
-      question={typ:"DE → ES",frage:deLabel,hint:"Was bedeutet das?",correct:w.español,options,word:w};
+      const deL=w.type==="Substantiv"?`${w.artikel} ${w.deutsch}`:w.deutsch;
+      const oth=shuffle(all.filter(v=>v.id!==w.id)).slice(0,3).map(v=>v.español);
+      question={typ:"DE → ES",frage:deL,hint:"Was bedeutet das?",correct:w.español,options:shuffle([w.español,...oth]),word:w};
     } else {
       const w=all[Math.floor(Math.random()*all.length)];
-      const deLabel=w.type==="Substantiv"?`${w.artikel} ${w.deutsch}`:w.deutsch;
-      const others=shuffle(all.filter(v=>v.id!==w.id)).slice(0,3).map(v=>v.type==="Substantiv"?`${v.artikel} ${v.deutsch}`:v.deutsch);
-      const options=shuffle([deLabel,...others]);
-      question={typ:"ES → DE",frage:w.español,hint:"Wie heißt das auf Deutsch?",correct:deLabel,options,word:w};
+      const deL=w.type==="Substantiv"?`${w.artikel} ${w.deutsch}`:w.deutsch;
+      const oth=shuffle(all.filter(v=>v.id!==w.id)).slice(0,3).map(v=>v.type==="Substantiv"?`${v.artikel} ${v.deutsch}`:v.deutsch);
+      question={typ:"ES → DE",frage:w.español,hint:"Wie heißt das auf Deutsch?",correct:deL,options:shuffle([deL,...oth]),word:w};
     }
     setQ(question);
   },[vocab]);
 
-  useEffect(()=>{generate();},[generate]);
-
+  useEffect(()=>{gen();},[gen]);
   const pick=(opt)=>{
-    if(selected) return;
-    setSelected(opt);
+    if(sel)return;setSel(opt);
     setScore(s=>({ok:s.ok+(opt===q.correct?1:0),total:s.total+1}));
-    timer.current=setTimeout(()=>generate(),1300);
+    tmr.current=setTimeout(()=>gen(),1300);
   };
 
-  if(!q) return null;
+  if(!q)return null;
   return(
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <span style={{fontSize:11,color:"var(--text-tertiary)",textTransform:"uppercase",letterSpacing:1}}>{q.typ}</span>
-        <span style={{fontSize:12,color:"var(--text-secondary)",fontWeight:600}}>{score.ok}/{score.total}</span>
+        <span style={{fontSize:11,color:"var(--color-text-tertiary)",textTransform:"uppercase",letterSpacing:0.8}}>{q.typ}</span>
+        <span style={{fontSize:12,color:"var(--color-text-secondary)",fontWeight:500}}>{score.ok}/{score.total}</span>
       </div>
-      <div style={{borderRadius:14,border:"1px solid var(--border-md)",background:"var(--bg-secondary)",padding:"22px 18px",textAlign:"center"}}>
+      <div style={{borderRadius:14,border:"0.5px solid var(--color-border-secondary)",background:"var(--color-background-secondary)",padding:"22px 18px",textAlign:"center"}}>
         <Badge cat={q.word.type}/>
-        <div style={{fontSize:26,fontWeight:700,margin:"12px 0 6px",lineHeight:1.3}}>{q.frage}</div>
-        <div style={{fontSize:12,color:"var(--text-tertiary)"}}>{q.hint}</div>
+        <div style={{fontSize:24,fontWeight:500,margin:"12px 0 6px",lineHeight:1.3}}>{q.frage}</div>
+        <div style={{fontSize:12,color:"var(--color-text-tertiary)"}}>{q.hint}</div>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
         {q.options.map((opt,i)=>{
-          let bg="var(--bg-primary)",border="1px solid var(--border)",color="var(--text-primary)";
-          if(selected){
-            if(opt===q.correct){bg="#2E8B7415";border="2px solid #2E8B74";color="#2E8B74";}
-            else if(opt===selected){bg="#B55A2E15";border="2px solid #B55A2E";color="#B55A2E";}
-            else{color="var(--text-tertiary)";}
-          }
-          return(
-            <button key={i} onClick={()=>pick(opt)} disabled={!!selected} style={{padding:"16px 10px",borderRadius:12,border,background:bg,color,cursor:selected?"default":"pointer",fontSize:13,fontWeight:600,textAlign:"center",lineHeight:1.4,transition:"all 0.12s"}}>
-              {opt}
-            </button>
-          );
+          let bg="var(--color-background-primary)",border="0.5px solid var(--color-border-secondary)",color="var(--color-text-primary)";
+          if(sel){if(opt===q.correct){bg="#2E8B7415";border="1.5px solid #2E8B74";color="#2E8B74";}
+            else if(opt===sel){bg="#B55A2E15";border="1.5px solid #B55A2E";color="#B55A2E";}
+            else color="var(--color-text-tertiary)";}
+          return<button key={i} onClick={()=>pick(opt)} disabled={!!sel} style={{padding:"14px 10px",borderRadius:12,border,background:bg,color,cursor:sel?"default":"pointer",fontSize:13,fontWeight:500,lineHeight:1.4,transition:"all 0.12s"}}>{opt}</button>;
         })}
       </div>
-      <button onClick={generate} style={{alignSelf:"flex-end",fontSize:12,color:"var(--text-tertiary)",background:"none",border:"none",cursor:"pointer"}}>Überspringen →</button>
+      <button onClick={gen} style={{alignSelf:"flex-end",fontSize:12,color:"var(--color-text-tertiary)",background:"none",border:"none",cursor:"pointer"}}>Überspringen →</button>
     </div>
   );
 }
 
-function App(){
+// ── VERB TRAINER ─────────────────────────────────────────────────────
+function VerbMode({vocab}){
+  const verbs=vocab.filter(w=>w.type==="Verb");
+  const [q,setQ]=useState(null);
+  const [sel,setSel]=useState(null);
+  const [score,setScore]=useState({ok:0,total:0});
+  const tmr=useRef(null);
+
+  const gen=useCallback(()=>{
+    setSel(null);if(tmr.current)clearTimeout(tmr.current);
+    if(verbs.length<2)return;
+    const r=Math.random();
+    const vb=verbs[Math.floor(Math.random()*verbs.length)];
+    let question;
+
+    if(r<0.33&&vb.prateritum&&vb.perfekt){
+      // Conjugation: fill the blank
+      const mis=Math.random()<0.5?"prateritum":"perfekt";
+      const lbl=mis==="prateritum"?"Präteritum":"Perfekt";
+      const cv=vb[mis];
+      const oth=shuffle(verbs.filter(v=>v.id!==vb.id&&v[mis])).slice(0,3).map(v=>v[mis]);
+      while(oth.length<3)oth.push(["machte","hatte","wollte","konnte"][oth.length]);
+      const frage=mis==="prateritum"
+        ?`${vb.deutsch}\n${vb.prasens} → ___ → ${vb.perfekt}`
+        :`${vb.deutsch}\n${vb.prasens} → ${vb.prateritum} → ___`;
+      question={typ:"Konjugation",frage,hint:`¿Cuál es el ${lbl}?`,correct:cv,options:shuffle([cv,...oth.slice(0,3)]),word:vb,isFill:true};
+    } else if(r<0.66){
+      // DE verb → ES meaning
+      const oth=shuffle(verbs.filter(v=>v.id!==vb.id)).slice(0,3).map(v=>v.español);
+      question={typ:"Bedeutung DE → ES",frage:vb.deutsch,hint:"¿Qué significa este verbo?",correct:vb.español,options:shuffle([vb.español,...oth]),word:vb};
+    } else {
+      // ES meaning → DE verb
+      const oth=shuffle(verbs.filter(v=>v.id!==vb.id)).slice(0,3).map(v=>v.deutsch);
+      question={typ:"Bedeutung ES → DE",frage:vb.español,hint:"¿Cuál es el infinitivo en alemán?",correct:vb.deutsch,options:shuffle([vb.deutsch,...oth]),word:vb};
+    }
+    setQ(question);
+  },[verbs.length]);
+
+  useEffect(()=>{gen();},[gen]);
+  const pick=(opt)=>{
+    if(sel)return;setSel(opt);
+    setScore(s=>({ok:s.ok+(opt===q.correct?1:0),total:s.total+1}));
+    tmr.current=setTimeout(()=>gen(),1400);
+  };
+
+  if(verbs.length<2)return(
+    <div style={{color:"var(--color-text-tertiary)",fontSize:14}}>Mindestens 2 Verben nötig. Füge mehr Vokabeln hinzu.</div>
+  );
+
+  if(!q)return null;
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <span style={{fontSize:11,color:"#2E8B74",textTransform:"uppercase",letterSpacing:0.8,fontWeight:500}}>{q.typ}</span>
+        <span style={{fontSize:12,color:"var(--color-text-secondary)",fontWeight:500}}>{score.ok}/{score.total}</span>
+      </div>
+      <div style={{borderRadius:14,border:"0.5px solid #2E8B7430",background:"#2E8B7408",padding:"22px 18px",textAlign:"center"}}>
+        <Badge cat="Verb"/>
+        <div style={{fontSize:q.isFill?18:26,fontWeight:500,margin:"12px 0 6px",lineHeight:1.5,whiteSpace:"pre-line"}}>{q.frage}</div>
+        <div style={{fontSize:12,color:"var(--color-text-tertiary)"}}>{q.hint}</div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+        {q.options.map((opt,i)=>{
+          let bg="var(--color-background-primary)",border="0.5px solid var(--color-border-secondary)",color="var(--color-text-primary)";
+          if(sel){if(opt===q.correct){bg="#2E8B7415";border="1.5px solid #2E8B74";color="#2E8B74";}
+            else if(opt===sel){bg="#B55A2E15";border="1.5px solid #B55A2E";color="#B55A2E";}
+            else color="var(--color-text-tertiary)";}
+          return<button key={i} onClick={()=>pick(opt)} disabled={!!sel} style={{padding:"14px 10px",borderRadius:12,border,background:bg,color,cursor:sel?"default":"pointer",fontSize:13,fontWeight:500,lineHeight:1.4,transition:"all 0.12s"}}>{opt}</button>;
+        })}
+      </div>
+      {sel&&q.word.prateritum&&q.typ!=="Konjugation"&&(
+        <div style={{fontSize:12,color:"var(--color-text-secondary)",textAlign:"center",padding:"8px",background:"var(--color-background-secondary)",borderRadius:8}}>
+          {q.word.prasens} · {q.word.prateritum} · {q.word.perfekt}
+        </div>
+      )}
+      <button onClick={gen} style={{alignSelf:"flex-end",fontSize:12,color:"var(--color-text-tertiary)",background:"none",border:"none",cursor:"pointer"}}>Überspringen →</button>
+    </div>
+  );
+}
+
+// ── MAIN APP ──────────────────────────────────────────────────────────
+export default function App(){
   const [view,setView]=useState("list");
   const [vocab,setVocab]=useState([]);
   const [filter,setFilter]=useState("Alle");
-  const [practiceMode,setPracticeMode]=useState(null);
+  const [pm,setPm]=useState(null);
+  const [ready,setReady]=useState(false);
 
-  useEffect(()=>{ setVocab(loadVocab()); },[]);
+  useEffect(()=>{
+    (async()=>{
+      try{
+        const r=await window.storage.get(STORAGE_KEY);
+        if(r?.value){const s=JSON.parse(r.value);if(s.length>0){setVocab(s);setReady(true);return;}}
+      }catch{}
+      try{await window.storage.set(STORAGE_KEY,JSON.stringify(SEED));}catch{}
+      setVocab(SEED);setReady(true);
+    })();
+  },[]);
 
-  const deleteWord=(id)=>{ const v=vocab.filter(w=>w.id!==id); setVocab(v); saveVocabLS(v); };
+  const saveVocab=useCallback(async(v)=>{setVocab(v);try{await window.storage.set(STORAGE_KEY,JSON.stringify(v));}catch{}},[]);
+  const deleteWord=useCallback(async(id)=>{saveVocab(vocab.filter(w=>w.id!==id));},[vocab,saveVocab]);
 
   const filtered=filter==="Alle"?vocab:vocab.filter(w=>w.type===filter);
   const cats=["Alle",...Object.keys(CATS)];
 
-  const NavBtn=({v,l})=>(
-    <button onClick={()=>{setView(v);if(v!=="practice")setPracticeMode(null);}} style={{fontSize:14,padding:"8px 18px",borderRadius:20,background:view===v?"var(--text-primary)":"var(--bg-secondary)",color:view===v?"var(--bg-primary)":"var(--text-secondary)",border:"1px solid var(--border)",cursor:"pointer",fontWeight:view===v?700:400}}>{l}</button>
-  );
+  if(!ready)return <div style={{padding:"2rem",color:"var(--color-text-secondary)",fontSize:14}}>Laden...</div>;
+
+  const MODES=[
+    {id:"fc",icon:"🃏",label:"Flashcards",sub:"Wort sehen → umdrehen · mit Lernfortschritt"},
+    {id:"qz",icon:"⚡",label:"Schnellquiz",sub:"4 Antworten — alle Kategorien"},
+    {id:"vb",icon:"🔤",label:"Verben üben",sub:"Konjugation + Bedeutung — nur Verben"},
+  ];
 
   return(
-    <div style={{maxWidth:540,margin:"0 auto",padding:"20px 16px 60px"}}>
-      <div style={{marginBottom:20}}>
-        <div style={{fontSize:11,color:"var(--text-tertiary)",letterSpacing:1,textTransform:"uppercase",marginBottom:2}}>Vokabeltrainer</div>
+    <div style={{maxWidth:640,margin:"0 auto",padding:"1.5rem 1rem 3rem",fontFamily:"var(--font-sans)"}}>
+      <div style={{marginBottom:"1.5rem"}}>
+        <div style={{fontSize:11,color:"var(--color-text-tertiary)",letterSpacing:1,textTransform:"uppercase",marginBottom:2}}>Vokabeltrainer</div>
         <div style={{display:"flex",alignItems:"baseline",gap:10}}>
-          <span style={{fontSize:24,fontWeight:700}}>Mein Wortschatz</span>
-          <span style={{fontSize:13,color:"var(--text-tertiary)"}}>{vocab.length} Wörter</span>
+          <span style={{fontSize:22,fontWeight:500}}>Mein Wortschatz</span>
+          <span style={{fontSize:13,color:"var(--color-text-tertiary)"}}>{vocab.length} Wörter</span>
         </div>
       </div>
 
-      <div style={{display:"flex",gap:8,marginBottom:20}}>
-        <NavBtn v="list" l="Wörter"/><NavBtn v="practice" l="Üben"/>
+      <div style={{display:"flex",gap:8,marginBottom:"1.5rem"}}>
+        {[["list","Wörter"],["practice","Üben"]].map(([v,l])=>(
+          <button key={v} onClick={()=>{setView(v);if(v!=="practice")setPm(null);}} style={{
+            fontSize:13,padding:"6px 14px",borderRadius:20,
+            background:view===v?"var(--color-text-primary)":"var(--color-background-secondary)",
+            color:view===v?"var(--color-background-primary)":"var(--color-text-secondary)",
+            border:"0.5px solid var(--color-border-secondary)",cursor:"pointer",fontWeight:view===v?500:400
+          }}>{l}</button>
+        ))}
       </div>
 
-      {view==="list"&&<div>
-        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:14}}>
-          {cats.map(c=>{
-            const cc=CATS[c];
-            return<button key={c} onClick={()=>setFilter(c)} style={{fontSize:11,padding:"4px 11px",borderRadius:20,background:filter===c?(cc?cc.color+"20":"var(--text-primary)"):"transparent",color:filter===c?(cc?cc.color:"var(--bg-primary)"):"var(--text-tertiary)",border:`1px solid ${filter===c?(cc?cc.color:"var(--text-primary)"):"var(--border)"}`,cursor:"pointer",fontWeight:filter===c?700:400}}>
-              {c} ({c==="Alle"?vocab.length:vocab.filter(w=>w.type===c).length})
-            </button>;
-          })}
+      {view==="list"&&(
+        <div>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:"1rem"}}>
+            {cats.map(c=>(
+              <button key={c} onClick={()=>setFilter(c)} style={{
+                fontSize:11,padding:"3px 10px",borderRadius:20,
+                background:filter===c?(CATS[c]?.color||"var(--color-text-primary)")+(c==="Alle"?"":"18"):"transparent",
+                color:filter===c?(c==="Alle"?"var(--color-background-primary)":CATS[c]?.color):"var(--color-text-tertiary)",
+                border:`0.5px solid ${filter===c?(CATS[c]?.color||"var(--color-border-primary)"):"var(--color-border-tertiary)"}`,cursor:"pointer"
+              }}>{c} ({c==="Alle"?vocab.length:vocab.filter(w=>w.type===c).length})</button>
+            ))}
+          </div>
+          {filtered.length===0
+            ?<div style={{color:"var(--color-text-tertiary)",fontSize:14,padding:"2rem 0"}}>Keine Wörter.</div>
+            :<div>{filtered.map(w=><WordCard key={w.id} word={w} onDelete={deleteWord}/>)}</div>
+          }
         </div>
-        {filtered.length===0
-          ?<div style={{color:"var(--text-tertiary)",fontSize:14,padding:"2rem 0"}}>Keine Wörter.</div>
-          :filtered.map(w=><WordCard key={w.id} word={w} onDelete={deleteWord}/>)
-        }
-      </div>}
+      )}
 
-      {view==="practice"&&<div>
-        {vocab.length<4
-          ?<div style={{color:"var(--text-tertiary)",fontSize:14}}>Mindestens 4 Wörter nötig.</div>
-          :!practiceMode
-            ?<div style={{display:"flex",flexDirection:"column",gap:12}}>
-              <div style={{fontSize:13,color:"var(--text-secondary)",marginBottom:4}}>Wähle deinen Übungsmodus:</div>
-              <button onClick={()=>setPracticeMode("flashcard")} style={{padding:"20px",borderRadius:14,border:"1px solid var(--border)",background:"var(--bg-primary)",cursor:"pointer",textAlign:"left"}}>
-                <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>🃏 Flashcards</div>
-                <div style={{fontSize:13,color:"var(--text-secondary)"}}>Wort sehen → umdrehen → Deutsch ↔ Español</div>
-              </button>
-              <button onClick={()=>setPracticeMode("quiz")} style={{padding:"20px",borderRadius:14,border:"1px solid var(--border)",background:"var(--bg-primary)",cursor:"pointer",textAlign:"left"}}>
-                <div style={{fontSize:16,fontWeight:700,marginBottom:4}}>⚡ Schnellquiz</div>
-                <div style={{fontSize:13,color:"var(--text-secondary)"}}>4 Antworten — Übersetzungen & Verbformen</div>
-              </button>
-            </div>
-            :<div>
-              <button onClick={()=>setPracticeMode(null)} style={{fontSize:12,color:"var(--text-tertiary)",background:"none",border:"none",cursor:"pointer",marginBottom:16,padding:0}}>← Modus wechseln</button>
-              {practiceMode==="flashcard"&&<FlashcardMode vocab={vocab}/>}
-              {practiceMode==="quiz"&&<QuizMode vocab={vocab}/>}
-            </div>
-        }
-      </div>}
+      {view==="practice"&&(
+        <div>
+          {vocab.length<3
+            ?<div style={{color:"var(--color-text-tertiary)",fontSize:14}}>Füge mindestens 3 Wörter hinzu.</div>
+            :!pm
+              ?<div style={{display:"flex",flexDirection:"column",gap:10}}>
+                <div style={{fontSize:13,color:"var(--color-text-secondary)",marginBottom:4}}>Wähle deinen Übungsmodus:</div>
+                {MODES.map(m=>(
+                  <button key={m.id} onClick={()=>setPm(m.id)} style={{padding:"18px 20px",borderRadius:12,border:"0.5px solid var(--color-border-secondary)",background:"var(--color-background-primary)",cursor:"pointer",textAlign:"left"}}>
+                    <div style={{fontSize:15,fontWeight:500,marginBottom:4}}>{m.icon} {m.label}</div>
+                    <div style={{fontSize:12,color:"var(--color-text-secondary)"}}>{m.sub}</div>
+                  </button>
+                ))}
+              </div>
+              :<div>
+                <button onClick={()=>setPm(null)} style={{fontSize:12,color:"var(--color-text-tertiary)",background:"none",border:"none",cursor:"pointer",marginBottom:"1rem",padding:0}}>← Modus wechseln</button>
+                {pm==="fc"&&<FlashcardMode vocab={vocab}/>}
+                {pm==="qz"&&<QuizMode vocab={vocab}/>}
+                {pm==="vb"&&<VerbMode vocab={vocab}/>}
+              </div>
+          }
+        </div>
+      )}
     </div>
   );
 }
-
-ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
-</script>
-</body>
-</html>
